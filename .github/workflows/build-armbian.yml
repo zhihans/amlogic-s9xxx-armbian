@@ -9,20 +9,10 @@ on:
   repository_dispatch:
   workflow_dispatch:
     inputs:
-      set_release:
-        description: "Select OS Release."
-        required: false
-        default: "jammy"
-        type: choice
-        options:
-          - jammy
-          - bullseye
-          - lunar
-          - bookworm
       armbian_board:
         description: "Select device board."
         required: false
-        default: "all"
+        default: "s905x3-hk1"
         type: choice
         options:
           - all
@@ -142,7 +132,7 @@ on:
       armbian_kernel:
         description: "Select kernel version."
         required: false
-        default: "5.15.1_6.1.1"
+        default: "6.1.1"
         type: choice
         options:
           - 5.4.1_5.10.1
@@ -184,7 +174,7 @@ on:
       armbian_storage:
         description: "Select image storage type."
         required: false
-        default: "save"
+        default: "temp"
         type: choice
         options:
           - save
@@ -208,6 +198,13 @@ jobs:
     runs-on: ubuntu-22.04
     if: ${{ github.event.repository.owner.id }} == ${{ github.event.sender.id }}
 
+    strategy:
+      matrix:
+        set_release:
+          - jammy
+          - bullseye
+          - lunar
+          - bookworm
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -238,13 +235,13 @@ jobs:
           git clone -q --single-branch --depth=1 --branch=main https://github.com/armbian/build.git build
           echo "status=success" >> ${GITHUB_OUTPUT}
 
-      - name: Compile Armbian [ ${{ inputs.set_release }} ]
+      - name: Compile Armbian [ ${{ matrix.set_release }} ]
         id: compile
         if: ${{ steps.down.outputs.status }} == 'success' && !cancelled()
         run: |
           # Compile method and parameter description: https://docs.armbian.com/Developer-Guide_Build-Options
           cd build/
-              ./compile.sh RELEASE=${{ inputs.set_release }} BOARD=odroidn2 BRANCH=current BUILD_MINIMAL=no \
+              ./compile.sh RELEASE=${{ matrix.set_release }} BOARD=odroidn2 BRANCH=current BUILD_MINIMAL=no \
                            BUILD_ONLY=default HOST=armbian BUILD_DESKTOP=no EXPERT=yes KERNEL_CONFIGURE=no \
                            COMPRESS_OUTPUTIMAGE="sha" SHARE_LOG=yes
           echo "status=success" >> ${GITHUB_OUTPUT}
@@ -255,11 +252,11 @@ jobs:
         run: |
           # Organize and keep essential files, delete unnecessary files
           chmod +x ${ROOTFS_SCRIPT}
-          ${ROOTFS_SCRIPT} -v ${{ inputs.set_release }}
+          ${ROOTFS_SCRIPT} -v ${{ matrix.set_release }}
 
           # Output cleaning result information
           df -hT ${PWD}
-          echo "build_tag=Armbian_${{ inputs.set_release }}_${{ inputs.armbian_storage }}_$(date +"%Y.%m")" >> ${GITHUB_OUTPUT}
+          echo "build_tag=Armbian_${{ matrix.set_release }}_${{ inputs.armbian_storage }}_$(date +"%Y.%m")" >> ${GITHUB_OUTPUT}
           echo "status=success" >> ${GITHUB_OUTPUT}
 
       - name: Upload Armbian image to Release
