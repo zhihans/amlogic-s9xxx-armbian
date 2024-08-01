@@ -12,7 +12,7 @@ on:
       armbian_url:
         description: "Set Armbian file path."
         required: false
-        default: ""
+        default: "https://github.com/armbian/community/releases/download/24.8.0-trunk.443/Armbian_community_24.8.0-trunk.443_Odroidn2l_bookworm_current_6.6.41_minimal.img.xz"
       armbian_board:
         description: "Select device board."
         required: false
@@ -205,7 +205,7 @@ on:
       armbian_storage:
         description: "Select image storage type."
         required: false
-        default: "save"
+        default: "temp"
         type: choice
         options:
           - save
@@ -305,14 +305,14 @@ jobs:
 
           mkdir -p /builder/build
           ln -sf /builder/build ${GITHUB_WORKSPACE}/build
-          ln -sf /builder/build /home/runner/work/_actions/ophub/amlogic-s9xxx-armbian/main/build
+          ln -sf /builder/build /home/runner/work/_actions/zhihans/amlogic-s9xxx-armbian/main/build
 
           sudo timedatectl set-timezone "${TZ}"
           echo "build_tag=Armbian${set_release}_${{ inputs.armbian_storage }}_$(date +"%Y.%m")" >> ${GITHUB_OUTPUT}
           echo "status=success" >> ${GITHUB_OUTPUT}
 
       - name: Rebuild Armbian
-        uses: ophub/amlogic-s9xxx-armbian@main
+        uses: zhihans/amlogic-s9xxx-armbian@main
         if: ${{ env.ARMBIAN_URL }} != '' && !cancelled()
         with:
           build_target: armbian
